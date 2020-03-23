@@ -1,0 +1,54 @@
+"Games"
+{
+    "csgo"
+	{
+		"Keys"
+		{
+			//netadr_s
+			"netadr_s::type"	"0"
+			"netadr_s::ip"		"4"
+			"netadr_s::port"	"8"
+			
+			//netpacket_t
+			"netpacket_t::from"	"0"
+			//...
+		}
+		
+		"Signatures"
+		{
+			"CBaseServer::RejectConnection"
+			{
+				"library"		"engine"
+				"windows"		"\x55\x8B\xEC\x83\xE4\xF8\x81\xEC\x40\x04\x00\x00"
+				"linux"			"\x55\x89\xE5\x81\xEC\x78\x04\x00\x00"
+			}
+			
+			"CBaseServer::ProcessConnectionlessPacket"
+			{
+				"library"		"engine"
+				"windows"		"\x55\x8B\xEC\xB8\xCC\x12\x00\x00"
+				"linux"			"\x55\x89\xE5\x57\x56\x53\x81\xEC\x4C\x11\x00\x00\x8B\x5D\x0C"
+			}
+		}
+		
+		"Offsets"
+		{
+			//netpacket_t
+			"netpacket_t::data"
+			{
+				"windows"	"48"
+				"linux"		"44"
+			}
+			
+			//...
+			
+			"netpacket_t::size"
+			{
+				"windows"	"88"
+				"linux"		"84"
+			}
+			
+			//...
+		}
+	}
+}
