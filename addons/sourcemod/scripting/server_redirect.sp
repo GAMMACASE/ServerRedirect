@@ -154,7 +154,6 @@ public void OnPluginStart()
 	
 	LoadTranslations("server_redirect.phrases");
 	
-	RegisterCommands();
 	RegAdminCmd("sm_refresh_servers", SM_RefreshServers, ADMFLAG_ROOT, "Reloads server_redirect.cfg file.");
 	
 	int hostip = FindConVar("hostip").IntValue;
@@ -187,14 +186,32 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 void RegisterCommands()
 {
+	static bool registered = false;
+	
+	if(registered)
+		return;
+	
 	char buff[640], buff2[20][32];
 	gServerCommands.GetString(buff, sizeof(buff));
 	
 	int count = ExplodeString(buff, ";", buff2, sizeof(buff2), sizeof(buff2[]));
 	
+	Regex reg = new Regex("^[\\d\\w\\_]+$");
+	
 	for(int i = 0; i < count; i++)
 	if(buff2[i][0] != '\0')
+	{
+		if(reg.MatchAll(buff2[i]) != 1)
+		{
+			LogError(SNAME..."Failed to create command \"%s\", invalid name.", buff2[i]);
+			continue;
+		}
+		
 		RegConsoleCmd(buff2[i], SM_Servers, "Displays servers list.");
+	}
+	
+	delete reg;
+	registered = true;
 }
 
 public void OnClientDisconnect(int client)
@@ -210,6 +227,8 @@ public void OnClientDisconnect(int client)
 
 public void OnConfigsExecuted()
 {
+	RegisterCommands();
+	
 	char buff[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, buff, sizeof(buff), SERVER_REDIRECT_CFG);
 	
