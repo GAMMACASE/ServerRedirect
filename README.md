@@ -20,6 +20,13 @@ Note: If you don't see your servers in servers menu, make sure that config file 
 Note: All servers were taken from server browser and selection was totaly random.
 
 Servers list menu:
+
 ![screen1](https://i.imgur.com/7v12EwG.png)
+
 Server info menu (Shown when you chose server):
+
 ![screen2](https://i.imgur.com/MwrmeRM.png)
+
+Server ad:
+
+![screen3](https://imgur.com/EKCkk2W.png)
