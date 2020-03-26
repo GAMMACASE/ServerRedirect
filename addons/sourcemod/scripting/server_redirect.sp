@@ -19,7 +19,7 @@ public Plugin myinfo =
 	name = "Server redirect",
 	author = "GAMMA CASE",
 	description = "Allows to connect to other servers.",
-	version = "1.0.0",
+	version = "1.1.0",
 	url = "https://steamcommunity.com/id/_GAMMACASE_/"
 };
 
