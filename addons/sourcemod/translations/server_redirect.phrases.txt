@@ -1,5 +1,24 @@
 "Phrases"
 {
+//All available colors (can also be lowercase):
+//Full name     | Short name
+//{DEFAULT}     | {D}
+//{RED}         | {R}
+//{LIGHTPURPLE} | {LP}
+//{GREEN}       | {GRN}
+//{LIME}        | {L}
+//{LIGHTGREEN}  | {LG}
+//{LIGHTRED}    | {LR}
+//{GRAY}        | {GRY}
+//{LIGHTOLIVE}  | {LO}
+//{METAL}       | {M}
+//{LIGHTBLUE}   | {LB}
+//{BLUE}        | {B}
+//{PURPLE}      | {P}
+//{VIOLET}      | {V}
+//{RED2}        | {R2}
+//{GOLD}        | {G}
+
 	"command_spam_attempt"
 	{
 		"en"		"[Server Redirect] Please wait a few seconds before you can use this command again."
@@ -112,5 +131,29 @@
 	{
 		"#format"	"{1:s},{2:s}"
 		"en"		"[Server Redirect] {1}\n[Server Redirect] Connect command: connect {2}"
+	}
+	
+	"server_advertisement_server_name"
+	{
+		"#format"	"{1:s}"
+		"en"		"[Server Redirect] {g}{1}"
+	}
+	
+	"server_advertisement_server_stats"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"[Server Redirect] Players: {lg}{1}{d} | Server ip: {lg}{2}"
+	}
+	
+	"server_advertisement_no_socket_server_name"
+	{
+		"#format"	"{1:s}"
+		"en"		"[Server Redirect] {g}{1}"
+	}
+	
+	"server_advertisement_no_socket_server_stats"
+	{
+		"#format"	"{1:s}"
+		"en"		"[Server Redirect] Server ip: {lg}{1}"
 	}
 }

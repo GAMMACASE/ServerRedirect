@@ -6,6 +6,7 @@
 #include "socket"
 #define REQUIRE_EXTENSIONS
 #include "glib/memutils"
+#include "glib/colorutils"
 
 #define SNAME "[Server Redirect] "
 #define SERVER_REDIRECT_CFG "configs/server_redirect.cfg"
@@ -130,13 +131,22 @@ ConVar gServerCommands,
 	gShowPlayerInfo,
 	gLogIfServerIsUnavailable,
 	gDisableConnect,
-	gCommandSpamTimeout;
-Menu gServersMenu;
-Menu gActiveMenu[MAXPLAYERS];
-int gMenuLastPos[MAXPLAYERS];
-int gMenuServersLastItem[MAXPLAYERS];
+	gCommandSpamTimeout,
+	gAdvertisementTime,
+	gAdvertisementMinPlayers,
+	gAdvertisementOrder;
+
+Menu gServersMenu,
+	gActiveMenu[MAXPLAYERS];
+
+int gMenuLastPos[MAXPLAYERS],
+	gMenuServersLastItem[MAXPLAYERS];
+
 ServerList gServers;
-ArrayList gUpdateQueue;
+ArrayList gUpdateQueue,
+	gAdvertisementList;
+
+Handle gAdvertisementTimer;
 
 char gThisServerIp[32];
 bool gSocketAvaliable;
@@ -150,6 +160,9 @@ public void OnPluginStart()
 	gLogIfServerIsUnavailable = CreateConVar("server_redirect_log_if_server_is_unavailable", "0", "If communication with other servers is timed out, should this be logged?\n(Note: Unused if you don't use socket extension)", .hasMin = true, .hasMax = true, .max = 1.0);
 	gDisableConnect = CreateConVar("server_redirect_disable_connect_button", "3", "Server connect button state:\n(Note: Unused if you don't use socket extension)\n0 - Always enabled;\n1 - Disabled if server is password protected, enabled otherwise;\n2 - Disabled if server is unavailable, enabled otherwise;\n3 - Enabled only if server is not password protected and avaliable.", .hasMin = true, .hasMax = true, .max = 3.0);
 	gCommandSpamTimeout = CreateConVar("server_redirect_command_spam_timeout", "1.0", "Will prevent execution of a command if previous execution was less then this seconds before.", .hasMin = true);
+	gAdvertisementTime = CreateConVar("server_redirect_advertisement_time", "60.0", "Server advertisement time in seconds (Map change required for this to take effect).\n(Note: set to 0 to disable)\n(Note2: this value should be bigger than server_redirect_socket_timeout by one second or more (Only if you have socket extension installed))", .hasMin = true);
+	gAdvertisementMinPlayers = CreateConVar("server_redirect_advertisement_min_players", "0", "Minimum players required to advertise server in chat.\n(Note: Unused if you don't use socket extension)", .hasMin = true);
+	gAdvertisementOrder = CreateConVar("server_redirect_advertisement_order", "0", "Order at which servers gonna be advertised.\n0 - Order at which servers are defined in config file;\n1 - Random order.", .hasMin = true, .hasMax = true, .max = 1.0);
 	AutoExecConfig();
 	
 	LoadTranslations("server_redirect.phrases");
@@ -157,7 +170,7 @@ public void OnPluginStart()
 	RegAdminCmd("sm_refresh_servers", SM_RefreshServers, ADMFLAG_ROOT, "Reloads server_redirect.cfg file.");
 	
 	int hostip = FindConVar("hostip").IntValue;
-	Format(gThisServerIp, sizeof(gThisServerIp), "%i.%i.%i.%i:%i", hostip >>> 24, hostip >> 16 & 0xFF, hostip >>> 8 & 0xFF, hostip & 0xFF, FindConVar("hostport").IntValue);
+	Format(gThisServerIp, sizeof(gThisServerIp), "%i.%i.%i.%i:%i", hostip >>> 24, hostip >> 16 & 0xFF, hostip >> 8 & 0xFF, hostip & 0xFF, FindConVar("hostport").IntValue);
 	
 	gUpdateQueue = new ArrayList();
 	gShouldReconnect = new StringMap();
@@ -299,6 +312,26 @@ public void OnConfigsExecuted()
 	
 	if(gServersMenu.ItemCount == 0)
 		gServersMenu.AddItem("no_servers", "", ITEMDRAW_DISABLED);
+	else if(gAdvertisementTime.FloatValue != 0.0)
+	{
+		if(gSocketAvaliable)
+		{
+			if(gAdvertisementTime.FloatValue - gSocketTimeoutTime.FloatValue - 1.0 <= 0.0)
+				LogError(SNAME..."server_redirect_advertisement_time cvar should be bigger than server_redirect_socket_timeout by one second or more, advertisements are disabled!")
+			else
+			{
+				gAdvertisementList = new ArrayList();
+				gAdvertisementTimer = CreateTimer(gAdvertisementTime.FloatValue - gSocketTimeoutTime.FloatValue - 1.0, Advertisement_Timer, .flags = TIMER_FLAG_NO_MAPCHANGE);
+			}
+		}
+		else
+		{
+			gAdvertisementList = new ArrayList();
+			gAdvertisementTimer = CreateTimer(gAdvertisementTime.FloatValue, Advertisement_NoSocket_Timer, .flags = TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+		}
+	}
+	else
+		delete gAdvertisementList;
 }
 
 Menu BuildServerInfoMenu()
@@ -341,6 +374,112 @@ void UpdateServersData()
 	}
 }
 
+public Action Advertisement_NoSocket_Timer(Handle timer)
+{
+	if(gAdvertisementList.Length == 0)
+		FillServersToAdvert();
+	
+	ServerEntry se;
+	GetServerToAdvert(se);
+	AdvertiseServer(se);
+}
+
+public Action Advertisement_Timer(Handle timer)
+{
+	if(gAdvertisementList.Length == 0)
+		FillServersToAdvert();
+	
+	UpdateServersData();
+	gAdvertisementTimer = CreateTimer(gSocketTimeoutTime.FloatValue + 1.0, Advertisement2_Timer, .flags = TIMER_FLAG_NO_MAPCHANGE);
+}
+
+public Action Advertisement2_Timer(Handle timer)
+{
+	ServerEntry se;
+	if(!GetServerToAdvert(se))
+	{
+		FillServersToAdvert();
+		if(GetServerToAdvert(se))
+			 AdvertiseServer(se);
+	}
+	else
+		AdvertiseServer(se);
+	
+	gAdvertisementTimer = CreateTimer(gAdvertisementTime.FloatValue - gSocketTimeoutTime.FloatValue - 1.0, Advertisement_Timer, .flags = TIMER_FLAG_NO_MAPCHANGE);
+}
+
+void FillServersToAdvert()
+{
+	gAdvertisementList.Clear();
+	
+	for(int i = 0; i < gServers.Length; i++)
+		gAdvertisementList.Push(i);
+}
+
+bool GetServerToAdvert(ServerEntry se)
+{
+	switch(gAdvertisementOrder.IntValue)
+	{
+		case 0:
+		{
+			while(gAdvertisementList.Length != 0)
+			{
+				gServers.GetArray(gAdvertisementList.Get(0), se);
+				if(gSocketAvaliable && (se.maxplayers == 0 || (se.curr_players < gAdvertisementMinPlayers.IntValue && se.curr_players_info < gAdvertisementMinPlayers.IntValue)))
+				{
+					gAdvertisementList.Erase(0);
+					continue;
+				}
+				
+				gAdvertisementList.Erase(0);
+				return true;
+			}
+		}
+		
+		case 1:
+		{
+			int idx;
+			while(gAdvertisementList.Length != 0)
+			{
+				idx = GetRandomInt(0, gAdvertisementList.Length - 1);
+				gServers.GetArray(gAdvertisementList.Get(idx), se);
+				if(gSocketAvaliable && (se.maxplayers == 0 || (se.curr_players < gAdvertisementMinPlayers.IntValue && se.curr_players_info < gAdvertisementMinPlayers.IntValue)))
+				{
+					gAdvertisementList.Erase(idx);
+					continue;
+				}
+				
+				gAdvertisementList.Erase(idx);
+				return true;
+			}
+		}
+	}
+	
+	return false;
+}
+
+void AdvertiseServer(ServerEntry se)
+{
+	char buff[32];
+	for(int i = 1; i <= MaxClients; i++)
+	{
+		if(!IsClientConnected(i) || !IsClientInGame(i) || IsFakeClient(i))
+			continue;
+		
+		if(gSocketAvaliable)
+		{
+			Format(buff, sizeof(buff), "%T", "servers_menu_server_entry_slots_count", i, (se.curr_players == 0 ? se.curr_players_info : se.curr_players), se.maxplayers);
+			PrintToChatColored(i, "%t", "server_advertisement_server_name", se.display_name);
+			PrintToChatColored(i, "%t", "server_advertisement_server_stats", buff, se.ip);
+		}
+		else
+		{
+			PrintToChatColored(i, "%t", "server_advertisement_no_socket_server_name", se.display_name);
+			PrintToChatColored(i, "%t", "server_advertisement_no_socket_server_stats", se.ip);
+		}
+	}
+}
+
 public Action Socket_Timeout_Timer(Handle timer, ArrayList data)
 {
 	SocketData sd;
@@ -377,6 +516,8 @@ public Action Socket_Timeout_Timer(Handle timer, ArrayList data)
 
 public Action SM_RefreshServers(int client, int args)
 {
+	if(gAdvertisementTimer)
+		delete gAdvertisementTimer;
 	OnConfigsExecuted();
 	ReplyToCommand(client, SNAME..."Servers list was updated.");
 	
