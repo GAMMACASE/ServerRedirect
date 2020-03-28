@@ -282,7 +282,7 @@ public void OnConfigsExecuted()
 			continue;
 		}
 		
-		if(re.Match(se.ip) == -1)
+		if(re.Match(se.ip) <= 0)
 		{
 			LogError(SNAME..."Found invalid ip address in section \"%s\" skipping.", buff);
 			continue;
