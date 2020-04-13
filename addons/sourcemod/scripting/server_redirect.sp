@@ -2,11 +2,17 @@
 #include "sdktools"
 #include "dhooks"
 #include "regex"
+
 #undef REQUIRE_EXTENSIONS
 #include "socket"
 #define REQUIRE_EXTENSIONS
+
 #include "glib/memutils"
+
+#define OVERRIDE_DEFAULT
 #include "glib/colorutils"
+#include "glib/convarutils"
+#undef OVERRIDE_DEFAULT
 
 #define SNAME "[Server Redirect] "
 #define SERVER_REDIRECT_CFG "configs/server_redirect.cfg"
@@ -19,7 +25,7 @@ public Plugin myinfo =
 	name = "Server redirect",
 	author = "GAMMA CASE",
 	description = "Allows to connect to other servers.",
-	version = "1.1.0",
+	version = "1.1.1",
 	url = "https://steamcommunity.com/id/_GAMMACASE_/"
 };
 
@@ -86,9 +92,9 @@ enum struct SocketData
 
 methodmap ServerList < ArrayList
 {
-	public ServerList(int size)
+	public ServerList()
 	{
-		return view_as<ServerList>(new ArrayList(size));
+		return view_as<ServerList>(new ArrayList(sizeof(ServerEntry)));
 	}
 	
 	public void DeleteServers()
@@ -174,7 +180,7 @@ public void OnPluginStart()
 	
 	gUpdateQueue = new ArrayList();
 	gShouldReconnect = new StringMap();
-	gServers = new ServerList(sizeof(ServerEntry));
+	gServers = new ServerList();
 	
 	GameData gd = new GameData("server_redirect.games");
 	ASSERT_MSG(gd, "Can't open \"server_redirect.games.txt\" gamedata file.");
@@ -972,14 +978,7 @@ public void Socket_Disconnect(Socket socket, any arg) { }
 
 public void SocketCreate_Error(Socket socket, const int errorType, const int errorNum, ArrayList data)
 {
-	if(data)
-	{
-		SocketData sd;
-		data.GetArray(0, sd);
-		SetFailState(SNAME..."Failed to create socket (%08X). [ip: %s, errType: %i, errNum: %i]", socket, sd.ip, errorType, errorNum);
-	}
-	else
-		SetFailState(SNAME..."Failed to create socket (%08X). [errType: %i, errNum: %i]", socket, errorType, errorNum);
+	//I guess this can be empty as timeout timer handles this pretty well.
 }
 
 stock bool IsSpamming(float &time_of_use, float wait_time = 5.0)
