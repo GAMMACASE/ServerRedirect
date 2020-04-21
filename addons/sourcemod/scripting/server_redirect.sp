@@ -143,7 +143,8 @@ ConVar gServerCommands,
 	gAdvertisementMinPlayers,
 	gAdvertisementOrder,
 	gAdvertiseThis,
-	gRemoveThis;
+	gRemoveThis,
+	gShowConfirmationMenu;
 
 Menu gServersMenu,
 	gActiveMenu[MAXPLAYERS];
@@ -172,8 +173,9 @@ public void OnPluginStart()
 	gAdvertisementTime = CreateConVar("server_redirect_advertisement_time", "60.0", "Server advertisement time in seconds (Map change required for this to take effect).\n(Note: set to 0 to disable)\n(Note2: this value should be bigger than server_redirect_socket_timeout by one second or more (Only if you have socket extension installed))", .hasMin = true);
 	gAdvertisementMinPlayers = CreateConVar("server_redirect_advertisement_min_players", "0", "Minimum players required to advertise server in chat.\n(Note: Unused if you don't use socket extension)", .hasMin = true);
 	gAdvertisementOrder = CreateConVar("server_redirect_advertisement_order", "0", "Order at which servers gonna be advertised.\n0 - Order at which servers are defined in config file;\n1 - Random order.", .hasMin = true, .hasMax = true, .max = 1.0);
-	gAdvertiseThis = CreateConVar("server_redirect_advertise_this", "0", "Is set, this current server will also be advertised in chat.\n(Note: Unused if server_redirect_remove_this set to 1!)", .hasMin = true, .hasMax = true, .max = 1.0);
-	gRemoveThis = CreateConVar("server_redirect_remove_this", "0", "Is set, this current server will be removed from servers menu.", .hasMin = true, .hasMax = true, .max = 1.0);
+	gAdvertiseThis = CreateConVar("server_redirect_advertise_this", "0", "If set, this current server will also be advertised in chat.\n(Note: Unused if server_redirect_remove_this set to 1!)", .hasMin = true, .hasMax = true, .max = 1.0);
+	gRemoveThis = CreateConVar("server_redirect_remove_this", "0", "If set, this current server will be removed from servers menu.", .hasMin = true, .hasMax = true, .max = 1.0);
+	gShowConfirmationMenu = CreateConVar("server_redirect_show_confirmation_menu", "0", "If set, will show confirmation menu when players will try to connect to some server via servers menu.", .hasMin = true, .hasMax = true, .max = 1.0);
 	AutoExecConfig();
 	
 	LoadTranslations("server_redirect.phrases");
@@ -774,7 +776,29 @@ public int ServerInfo_Menu(Menu menu, MenuAction action, int param1, int param2)
 			gServers.GetServerByMenu(menu, se);
 			
 			if(StrEqual(buff, "connect"))
-				RedirectClient(param1, se.ip);
+				if(gShowConfirmationMenu.BoolValue)
+				{
+					int idx = gUpdateQueue.FindValue(GetClientUserId(param1));
+					if(idx != -1)
+						gUpdateQueue.Erase(idx);
+					
+					Menu cmenu = new Menu(Confirmation_Menu);
+					
+					cmenu.SetTitle("%T\n ", "confirmation_menu_title", param1, se.ip);
+					
+					char buff2[32];
+					Format(buff, sizeof(buff), "%T", "confirmation_menu_continue", param1);
+					Format(buff2, sizeof(buff2), "c%s", se.ip);
+					cmenu.AddItem(buff2, buff);
+					
+					Format(buff, sizeof(buff), "%T", "confirmation_menu_notnow", param1);
+					Format(buff2, sizeof(buff2), "b%s", se.ip);
+					cmenu.AddItem(buff2, buff);
+					
+					cmenu.Display(param1, MENU_TIME_FOREVER);
+				}
+				else
+					RedirectClient(param1, se.ip);
 			else if(StrEqual(buff, "print_info"))
 			{
 				menu.Display(param1, MENU_TIME_FOREVER);
@@ -797,6 +821,28 @@ public int ServerInfo_Menu(Menu menu, MenuAction action, int param1, int param2)
 			if(idx != -1)
 				gUpdateQueue.Erase(idx);
 		}
+	}
+	
+	return 0;
+}
+
+public int Confirmation_Menu(Menu menu, MenuAction action, int param1, int param2)
+{
+	switch(action)
+	{
+		case MenuAction_Select:
+		{
+			char buff[32];
+			menu.GetItem(param2, buff, sizeof(buff));
+			
+			if(buff[0] == 'c')
+				RedirectClient(param1, buff[1]);
+			else
+				ShowServerInfoMenu(param1, buff[1]);
+		}
+		
+		case MenuAction_End:
+			delete menu;
 	}
 	
 	return 0;

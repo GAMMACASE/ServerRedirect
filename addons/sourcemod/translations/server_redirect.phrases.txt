@@ -156,4 +156,20 @@
 		"#format"	"{1:s}"
 		"en"		"[Server Redirect] Server ip: {lg}{1}"
 	}
+	
+	"confirmation_menu_title"
+	{
+		"#format"	"{1:s}"
+		"en"		"You are about to connect to:\n{1}\n \nContinue?"
+	}
+	
+	"confirmation_menu_continue"
+	{
+		"en"		"Continue"
+	}
+	
+	"confirmation_menu_notnow"
+	{
+		"en"		"Not now"
+	}
 }
