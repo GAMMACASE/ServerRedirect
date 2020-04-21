@@ -671,7 +671,7 @@ public int ServerInfo_Menu(Menu menu, MenuAction action, int param1, int param2)
 					Format(buff, sizeof(buff), "%T", "servers_menu_server_entry_not_available", param1);
 				menu.SetTitle("%T\n ", "servinfo_menu_title_no_player_info", param1, se.display_name, se.ip, se.map, buff);
 			}
-				
+			
 			gActiveMenu[param1] = menu;
 			if(gUpdateQueue.FindValue(GetClientUserId(param1)) == -1)
 				gUpdateQueue.Push(GetClientUserId(param1));
@@ -774,6 +774,9 @@ public int ServerInfo_Menu(Menu menu, MenuAction action, int param1, int param2)
 		{
 			gActiveMenu[param1] = null;
 			gMenuLastPos[param1] = 0;
+			
+			if(!IsClientConnected(param1))
+				return 0;
 			
 			if(param2 == MenuCancel_ExitBack)
 				gServersMenu.DisplayAt(param1, gMenuServersLastItem[param1], MENU_TIME_FOREVER);
