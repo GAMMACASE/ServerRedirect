@@ -161,7 +161,7 @@ float gServersCooldown[MAXPLAYERS];
 
 public void OnPluginStart()
 {
-	gServerCommands = CreateConVar("server_redirect_commands", "sm_servers;sm_serv;sm_project;sm_list;", "Commands that invoke servers redirect menu.\n(Note: To see changes server needs to be restarted! There's also a 640 character limit and 20 commands max)");
+	gServerCommands = CreateConVar("server_redirect_commands", "sm_servers;sm_serv;sm_project;sm_list;", "Commands that invoke servers redirect menu.\n(Note: Map change required for changes to take effect! There's also a 128 character limit per command.)");
 	gSocketTimeoutTime = CreateConVar("server_redirect_socket_timeout", "10.0", "Socket timeout time.\n(Note: Unused if you don't use socket extension)", .hasMin = true, .min = 2.0);
 	gShowPlayerInfo = CreateConVar("server_redirect_show_player_info", "1", "Show players info when you select server in servers redirect menu.\n(Note: Unused if you don't use socket extension)", .hasMin = true, .hasMax = true, .max = 1.0);
 	gLogIfServerIsUnavailable = CreateConVar("server_redirect_log_if_server_is_unavailable", "0", "If communication with other servers is timed out, should this be logged?\n(Note: Unused if you don't use socket extension)", .hasMin = true, .hasMax = true, .max = 1.0);

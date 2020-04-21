@@ -24,7 +24,7 @@ stock void RegConsoleCmds(const char[] commands, ConCmd callback, const char[] d
 		
 		do
 		{
-			if(!IsCharAlpha(commands[i]) && !IsCharNumeric(commands[i]) && commands[i] != '_')
+			if((!IsCharAlpha(commands[i]) && !IsCharNumeric(commands[i]) && commands[i] != '_') || i - start_pos + 1 >= MAX_CMD_LENGTH)
 			{
 				len = FindCharInString(commands[i], ';');
 				if(len == -1)
@@ -33,8 +33,9 @@ stock void RegConsoleCmds(const char[] commands, ConCmd callback, const char[] d
 					i += len;
 				
 				len = i++ - start_pos + 1;
-				strcopy(buff, (len > MAX_CMD_LENGTH ? MAX_CMD_LENGTH : len), commands[start_pos]);
-				LogError("Failed to create command \"%s\".", buff);
+				char[] tempbuff = new char[len + 1];
+				strcopy(tempbuff, len, commands[start_pos]);
+				LogError("Failed to create command \"%s\".", tempbuff);
 				
 				shouldskip = true;
 				break;
@@ -47,6 +48,8 @@ stock void RegConsoleCmds(const char[] commands, ConCmd callback, const char[] d
 		
 		len = i++ - start_pos + 1;
 		strcopy(buff, (len > MAX_CMD_LENGTH ? MAX_CMD_LENGTH : len), commands[start_pos]);
+		
+		PrintToServer("Registering \"%s\"", buff);
 		
 		if(gRegisteredCommands.FindString(buff) == -1)
 			RegConsoleCmd(buff, callback, description, flags);
