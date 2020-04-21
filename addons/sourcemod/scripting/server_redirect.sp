@@ -141,7 +141,9 @@ ConVar gServerCommands,
 	gCommandSpamTimeout,
 	gAdvertisementTime,
 	gAdvertisementMinPlayers,
-	gAdvertisementOrder;
+	gAdvertisementOrder,
+	gAdvertiseThis,
+	gRemoveThis;
 
 Menu gServersMenu,
 	gActiveMenu[MAXPLAYERS];
@@ -170,6 +172,8 @@ public void OnPluginStart()
 	gAdvertisementTime = CreateConVar("server_redirect_advertisement_time", "60.0", "Server advertisement time in seconds (Map change required for this to take effect).\n(Note: set to 0 to disable)\n(Note2: this value should be bigger than server_redirect_socket_timeout by one second or more (Only if you have socket extension installed))", .hasMin = true);
 	gAdvertisementMinPlayers = CreateConVar("server_redirect_advertisement_min_players", "0", "Minimum players required to advertise server in chat.\n(Note: Unused if you don't use socket extension)", .hasMin = true);
 	gAdvertisementOrder = CreateConVar("server_redirect_advertisement_order", "0", "Order at which servers gonna be advertised.\n0 - Order at which servers are defined in config file;\n1 - Random order.", .hasMin = true, .hasMax = true, .max = 1.0);
+	gAdvertiseThis = CreateConVar("server_redirect_advertise_this", "0", "Is set, this current server will also be advertised in chat.\n(Note: Unused if server_redirect_remove_this set to 1!)", .hasMin = true, .hasMax = true, .max = 1.0);
+	gRemoveThis = CreateConVar("server_redirect_remove_this", "0", "Is set, this current server will be removed from servers menu.", .hasMin = true, .hasMax = true, .max = 1.0);
 	AutoExecConfig();
 	
 	LoadTranslations("server_redirect.phrases");
@@ -265,6 +269,9 @@ public void OnConfigsExecuted()
 			LogError(SNAME..."Found invalid ip address in section \"%s\" skipping.", buff);
 			continue;
 		}
+		
+		if(gRemoveThis.BoolValue && StrEqual(gThisServerIp, se.ip))
+			continue;
 		
 		if(gServers.FindString(se.ip) != -1)
 		{
@@ -402,14 +409,9 @@ bool GetServerToAdvert(ServerEntry se)
 		{
 			while(gAdvertisementList.Length != 0)
 			{
-				gServers.GetArray(gAdvertisementList.Get(0), se);
-				if(gSocketAvaliable && (se.maxplayers == 0 || (se.curr_players < gAdvertisementMinPlayers.IntValue && se.curr_players_info < gAdvertisementMinPlayers.IntValue)))
-				{
-					gAdvertisementList.Erase(0);
+				if(!FilterServerToAdvert(se))
 					continue;
-				}
 				
-				gAdvertisementList.Erase(0);
 				return true;
 			}
 		}
@@ -420,20 +422,30 @@ bool GetServerToAdvert(ServerEntry se)
 			while(gAdvertisementList.Length != 0)
 			{
 				idx = GetRandomInt(0, gAdvertisementList.Length - 1);
-				gServers.GetArray(gAdvertisementList.Get(idx), se);
-				if(gSocketAvaliable && (se.maxplayers == 0 || (se.curr_players < gAdvertisementMinPlayers.IntValue && se.curr_players_info < gAdvertisementMinPlayers.IntValue)))
-				{
-					gAdvertisementList.Erase(idx);
+				if(!FilterServerToAdvert(se, idx))
 					continue;
-				}
 				
-				gAdvertisementList.Erase(idx);
 				return true;
 			}
 		}
 	}
 	
 	return false;
+}
+
+bool FilterServerToAdvert(ServerEntry se, int idx = 0)
+{
+	gServers.GetArray(gAdvertisementList.Get(idx), se);
+	if(gSocketAvaliable && (se.maxplayers == 0 
+				|| (se.curr_players < gAdvertisementMinPlayers.IntValue && se.curr_players_info < gAdvertisementMinPlayers.IntValue)
+				|| (!gAdvertiseThis.BoolValue && StrEqual(gThisServerIp, se.ip))))
+	{
+		gAdvertisementList.Erase(idx);
+		return false;
+	}
+	
+	gAdvertisementList.Erase(idx);
+	return true;
 }
 
 void AdvertiseServer(ServerEntry se)
