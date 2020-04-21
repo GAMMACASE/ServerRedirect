@@ -46,34 +46,32 @@ enum
 	COLOR_END = COLOR_GOLD
 }
 
-#if defined CUSTOM_CHAT_FUNCS
-#define MAX_MESSAGE_LENGTH 2512
-
-stock void PrintToChatGeneric(int client, const char[] msg, bool chat = true)
-{
-	Protobuf pb = view_as<Protobuf>(StartMessageOne("SayText", client, USERMSG_RELIABLE));
-	
-	pb.SetInt("ent_idx", 0);
-	pb.SetBool("chat", chat);
-	pb.SetString("text", msg);
-	
-	EndMessage();
-}
-
-stock void PrintToChatAllGeneric(const char[] msg, bool chat = true)
-{
-	Protobuf pb = view_as<Protobuf>(StartMessageAll("SayText", USERMSG_RELIABLE));
-	
-	pb.SetInt("ent_idx", 0);
-	pb.SetBool("chat", chat);
-	pb.SetString("text", msg);
-	
-	EndMessage();
-}
-#else
 #define MAX_MESSAGE_LENGTH 512
-#define PrintToChatGeneric PrintToChat
-#define PrintToChatAllGeneric PrintToChatAll
+
+#if defined _msgutils_included
+
+stock void PrintToChatLongColored(int client, const char[] format, any ...)
+{
+	char buff[MAX_MSG_SIZE];
+	VFormat(buff, sizeof(buff), format, 3);
+	
+	ReformatMessage(buff, sizeof(buff));
+	CheckForSpace(buff, sizeof(buff));
+	
+	PrintToChatLong(client, buff);
+}
+
+stock void PrintToChatAllLongColored(const char[] format, any ...)
+{
+	char buff[MAX_MSG_SIZE];
+	VFormat(buff, sizeof(buff), format, 2);
+	
+	ReformatMessage(buff, sizeof(buff));
+	CheckForSpace(buff, sizeof(buff));
+	
+	PrintToChatAllLong(buff);
+}
+
 #endif
 
 stock void PrintToChatColored(int client, const char[] format, any ...)
@@ -84,7 +82,7 @@ stock void PrintToChatColored(int client, const char[] format, any ...)
 	ReformatMessage(buff, sizeof(buff));
 	CheckForSpace(buff, sizeof(buff));
 	
-	PrintToChatGeneric(client, buff);
+	PrintToChat(client, buff);
 }
 
 stock void PrintToChatAllColored(const char[] format, any ...)
@@ -95,7 +93,7 @@ stock void PrintToChatAllColored(const char[] format, any ...)
 	ReformatMessage(buff, sizeof(buff));
 	CheckForSpace(buff, sizeof(buff));
 	
-	PrintToChatAllGeneric(buff);
+	PrintToChatAll(buff);
 }
 
 stock void ReformatMessage(char[] buff, int len)
@@ -112,3 +110,8 @@ stock void CheckForSpace(char[] buff, int len)
 	if(COLOR_START < buff[0] < COLOR_END)
 		Format(buff, len, " %s", buff);
 }
+
+#if defined OVERRIDE_DEFAULT
+#define PrintToChat PrintToChatColored
+#define PrintToChatAll PrintToChatAllColored
+#endif

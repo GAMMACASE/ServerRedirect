@@ -48,7 +48,7 @@ stock void AutoExecConfigCustom(bool autoCreate=true, const char[] name="", cons
 		FillConVarFile(path, plname);
 	}
 	
-	AutoExecConfig(true, name, folder);
+	AutoExecConfig(false, name, folder);
 	
 	delete gRegisteredConVars;
 	delete gRegisteredConVarsDescriptions;
@@ -70,6 +70,10 @@ static stock void FillConVarFile(const char path[PLATFORM_MAX_PATH], const char 
 	for(int i = 0; i < gRegisteredConVars.Length; i++)
 	{
 		cv = gRegisteredConVars.Get(i);
+		
+		if(cv.Flags & FCVAR_DONTRECORD)
+			continue;
+		
 		gRegisteredConVarsDescriptions.GetString(i, buff, sizeof(buff));
 		
 		ReplaceString(buff, sizeof(buff), "\n", "\n// ");
@@ -150,7 +154,7 @@ static stock void ParseConVarFile(const char path[PLATFORM_MAX_PATH])
 			else
 			{
 				//need empty buffer each time, can't actualy fake it
-				char buff[sizeof(cvar_name)];
+				char buff[sizeof(cvar_val)];
 				
 				if(line[i] == '"')
 				{
