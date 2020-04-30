@@ -56,7 +56,7 @@ stock void AutoExecConfigCustom(bool autoCreate=true, const char[] name="", cons
 
 static stock void FillConVarFile(const char path[PLATFORM_MAX_PATH], const char plname[PLATFORM_MAX_PATH])
 {
-	File file = OpenFile(path, "w", true);
+	File file = OpenFile(path, "w");
 	
 	if(!file)
 		ThrowError("Failed to auto generate config \"%s\", make sure the directory has write permission", path);
