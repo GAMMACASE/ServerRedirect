@@ -10,6 +10,7 @@ To add servers to servers menu use ``sourcemod/addons/configs/server_redirect.cf
 Note: If you don't see your servers in servers menu, make sure that config file in the right place under right name (``sourcemod/addons/configs/server_redirect.cfg``) and is configured properly.
 
 # Requirements
+* [Sourcemod 1.10;](https://www.sourcemod.net/downloads.php?branch=1.10-dev&all=1)
 * [Dhooks with detour support;](https://forums.alliedmods.net/showpost.php?p=2588686&postcount=589)
 * [Socket (Optional).](https://github.com/JoinedSenses/sm-ext-socket)
 
