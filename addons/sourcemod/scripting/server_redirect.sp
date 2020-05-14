@@ -144,7 +144,8 @@ ConVar gServerCommands,
 	gAdvertisementOrder,
 	gAdvertiseThis,
 	gRemoveThis,
-	gShowConfirmationMenu;
+	gShowConfirmationMenu,
+	gAnnounceLeave;
 
 Menu gServersMenu,
 	gActiveMenu[MAXPLAYERS];
@@ -176,6 +177,7 @@ public void OnPluginStart()
 	gAdvertiseThis = CreateConVar("server_redirect_advertise_this", "0", "If set, this current server will also be advertised in chat.\n(Note: Unused if server_redirect_remove_this set to 1!)", .hasMin = true, .hasMax = true, .max = 1.0);
 	gRemoveThis = CreateConVar("server_redirect_remove_this", "0", "If set, this current server will be removed from servers menu.", .hasMin = true, .hasMax = true, .max = 1.0);
 	gShowConfirmationMenu = CreateConVar("server_redirect_show_confirmation_menu", "0", "If set, will show confirmation menu when players will try to connect to some server via servers menu.", .hasMin = true, .hasMax = true, .max = 1.0);
+	gAnnounceLeave = CreateConVar("server_redirect_show_advertisement_leave", "0", "If set, will show message to alert players a player has connected to another server.", .hasMin = true, .hasMax = true, .max = 1.0);
 	AutoExecConfig();
 	
 	LoadTranslations("server_redirect.phrases");
@@ -798,7 +800,20 @@ public int ServerInfo_Menu(Menu menu, MenuAction action, int param1, int param2)
 					cmenu.Display(param1, MENU_TIME_FOREVER);
 				}
 				else
+				{
+					if(gAnnounceLeave.BoolValue)
+					{
+						for(int i = 1; i <= MaxClients; i++)
+						{
+							if(!IsClientConnected(i) || !IsClientInGame(i) || IsFakeClient(i))
+								continue;
+							
+							PrintToChatColored(i, "%t", "server_advertisement_leave", param1, se.ip);
+						}
+					}
+					
 					RedirectClient(param1, se.ip);
+				}
 			else if(StrEqual(buff, "print_info"))
 			{
 				menu.Display(param1, MENU_TIME_FOREVER);
@@ -836,7 +851,20 @@ public int Confirmation_Menu(Menu menu, MenuAction action, int param1, int param
 			menu.GetItem(param2, buff, sizeof(buff));
 			
 			if(buff[0] == 'c')
+			{
+				if(gAnnounceLeave.BoolValue)
+				{
+					for(int i = 1; i <= MaxClients; i++)
+					{
+						if(!IsClientConnected(i) || !IsClientInGame(i) || IsFakeClient(i))
+							continue;
+						
+						PrintToChatColored(i, "%t", "server_advertisement_leave", param1, buff[1]);
+					}
+				}
+
 				RedirectClient(param1, buff[1]);
+			}
 			else
 				ShowServerInfoMenu(param1, buff[1]);
 		}
