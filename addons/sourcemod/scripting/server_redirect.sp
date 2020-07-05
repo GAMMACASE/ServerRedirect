@@ -196,9 +196,9 @@ public void OnPluginStart()
 	RegAdminCmd("sm_refresh_servers", SM_RefreshServers, ADMFLAG_ROOT, "Reloads server_redirect.cfg file.");
 	
 	gUpdateQueue = new ArrayList();
-	gShouldReconnect = new StringMap();
 	gServers = new ServerList();
 	#endif
+	gShouldReconnect = new StringMap();
 	
 	int hostip = FindConVar("hostip").IntValue;
 	Format(gThisServerIp, sizeof(gThisServerIp), "%i.%i.%i.%i:%i", hostip >>> 24, hostip >> 16 & 0xFF, hostip >> 8 & 0xFF, hostip & 0xFF, FindConVar("hostport").IntValue);
