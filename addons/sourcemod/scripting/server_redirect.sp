@@ -3,9 +3,15 @@
 #include "dhooks"
 #include "regex"
 
+
+#define STANDALONE_BUILD
+
+#if !defined STANDALONE_BUILD
 #undef REQUIRE_EXTENSIONS
 #include "socket"
 #define REQUIRE_EXTENSIONS
+#define SERVER_REDIRECT_CFG "configs/server_redirect.cfg"
+#endif
 
 #include "glib/memutils"
 #include "glib/commandutils"
@@ -16,7 +22,6 @@
 #undef OVERRIDE_DEFAULT
 
 #define SNAME "[Server Redirect] "
-#define SERVER_REDIRECT_CFG "configs/server_redirect.cfg"
 
 #include "server_redirect/net.sp"
 #include "server_redirect/redirect.sp"
@@ -133,6 +138,8 @@ methodmap ServerList < ArrayList
 	}
 }
 
+char gThisServerIp[32];
+#if !defined STANDALONE_BUILD
 ConVar gServerCommands,
 	gSocketTimeoutTime,
 	gShowPlayerInfo,
@@ -159,12 +166,13 @@ ArrayList gUpdateQueue,
 
 Handle gAdvertisementTimer;
 
-char gThisServerIp[32];
 bool gSocketAvaliable;
 float gServersCooldown[MAXPLAYERS];
+#endif
 
 public void OnPluginStart()
 {
+	#if !defined STANDALONE_BUILD
 	gServerCommands = CreateConVar("server_redirect_commands", "sm_servers;sm_serv;sm_project;sm_list;", "Commands that invoke servers redirect menu.\n(Note: Map change required for changes to take effect! There's also a 128 character limit per command.)");
 	gSocketTimeoutTime = CreateConVar("server_redirect_socket_timeout", "10.0", "Socket timeout time.\n(Note: Unused if you don't use socket extension)", .hasMin = true, .min = 2.0);
 	gShowPlayerInfo = CreateConVar("server_redirect_show_player_info", "1", "Show players info when you select server in servers redirect menu.\n(Note: Unused if you don't use socket extension)", .hasMin = true, .hasMax = true, .max = 1.0);
@@ -179,17 +187,21 @@ public void OnPluginStart()
 	gShowConfirmationMenu = CreateConVar("server_redirect_show_confirmation_menu", "0", "If set, will show confirmation menu when players will try to connect to some server via servers menu.", .hasMin = true, .hasMax = true, .max = 1.0);
 	gAnnounceLeave = CreateConVar("server_redirect_show_advertisement_leave", "0", "If set, will show message to alert players a player has connected to another server.", .hasMin = true, .hasMax = true, .max = 1.0);
 	AutoExecConfig();
+	#endif
+
 	
 	LoadTranslations("server_redirect.phrases");
 	
+	#if !defined STANDALONE_BUILD
 	RegAdminCmd("sm_refresh_servers", SM_RefreshServers, ADMFLAG_ROOT, "Reloads server_redirect.cfg file.");
-	
-	int hostip = FindConVar("hostip").IntValue;
-	Format(gThisServerIp, sizeof(gThisServerIp), "%i.%i.%i.%i:%i", hostip >>> 24, hostip >> 16 & 0xFF, hostip >> 8 & 0xFF, hostip & 0xFF, FindConVar("hostport").IntValue);
 	
 	gUpdateQueue = new ArrayList();
 	gShouldReconnect = new StringMap();
 	gServers = new ServerList();
+	#endif
+	
+	int hostip = FindConVar("hostip").IntValue;
+	Format(gThisServerIp, sizeof(gThisServerIp), "%i.%i.%i.%i:%i", hostip >>> 24, hostip >> 16 & 0xFF, hostip >> 8 & 0xFF, hostip & 0xFF, FindConVar("hostport").IntValue);
 	
 	GameData gd = new GameData("server_redirect.games");
 	ASSERT_MSG(gd, "Can't open \"server_redirect.games.txt\" gamedata file.");
@@ -201,10 +213,12 @@ public void OnPluginStart()
 	delete gd;
 }
 
+#if !defined STANDALONE_BUILD
 public void OnAllPluginsLoaded()
 {
 	gSocketAvaliable = GetExtensionFileStatus("socket.ext") == 1;
 }
+#endif
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
@@ -212,6 +226,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	RegPluginLibrary("server_redirect");
 }
 
+
+#if !defined STANDALONE_BUILD
 public void OnClientDisconnect(int client)
 {
 	gActiveMenu[client] = null;
@@ -222,7 +238,6 @@ public void OnClientDisconnect(int client)
 	if(idx != -1)
 		gUpdateQueue.Erase(idx);
 }
-
 public void OnConfigsExecuted()
 {
 	char buff[1024];
@@ -1044,6 +1059,8 @@ public void SocketCreate_Error(Socket socket, const int errorType, const int err
 {
 	//I guess this can be empty as timeout timer handles this pretty well.
 }
+
+#endif
 
 stock bool IsSpamming(float &time_of_use, float wait_time = 5.0)
 {
