@@ -21,7 +21,7 @@
 
 	"command_spam_attempt"
 	{
-		"fr"		"[Server Redirect] Merci d'attendre quelques secondes avant de réutiliser la commande"
+		"fr"		"[Server Redirect] Merci d'attendre quelques secondes avant de rÃ©utiliser la commande"
 	}
 
 	"servers_menu_title"
@@ -87,12 +87,12 @@
 
 	"servinfo_menu_connect_current"
 	{
-		"fr"		"[Vous êtes dessus]"
+		"fr"		"[Vous Ãªtes dessus]"
 	}
 
 	"servinfo_menu_connect_password_protected"
 	{
-		"fr"		"[Protégé par mot de passe]"
+		"fr"		"[ProtÃ©gÃ© par mot de passe]"
 	}
 
 	"servinfo_menu_connect_unavailable"
@@ -113,7 +113,7 @@
 
 	"servinfo_menu_players_data_unavailable"
 	{
-		"fr"		"Données joueurs indisponibles"
+		"fr"		"DonnÃ©es joueurs indisponibles"
 	}
 
 	"servinfo_menu_players_no_players"
@@ -160,7 +160,7 @@
 	"confirmation_menu_title"
 	{
 		"#format"	"{1:s}"
-		"fr"		"Vous souhaitez vous connecter à:\n{1}\n \nContinuer?"
+		"fr"		"Vous souhaitez vous connecter Ã :\n{1}\n \nContinuer?"
 	}
 
 	"confirmation_menu_continue"
