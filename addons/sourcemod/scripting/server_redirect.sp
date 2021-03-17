@@ -7,7 +7,8 @@
 #include "socket"
 #define REQUIRE_EXTENSIONS
 
-#include "glib/memutils"
+#include "glib/assertutils"
+#include "glib/addressutils"
 #include "glib/commandutils"
 
 #define OVERRIDE_DEFAULT
@@ -33,6 +34,7 @@ public Plugin myinfo =
 enum struct ServerEntry
 {
 	char ip[32];
+	char alias_ip[32];
 	ArrayList players;
 	Menu menu;
 	Handle socket;
@@ -59,6 +61,14 @@ enum struct ServerEntry
 		this.curr_players = 0;
 		this.password_protected = false;
 		this.challenge = 0;
+	}
+	
+	char GetDisplayIP()
+	{
+		if(this.alias_ip[0] == '\0')
+			return this.ip;
+		else
+			return this.alias_ip;
 	}
 	
 	char CutIp()
@@ -271,6 +281,8 @@ public void OnConfigsExecuted()
 	{
 		kv.GetSectionName(buff, sizeof(buff));
 		
+		kv.GetString("alias_ip", se.alias_ip, sizeof(ServerEntry::alias_ip));
+		
 		kv.GetString("ip", se.ip, sizeof(ServerEntry::ip));
 		if(se.ip[0] == '\0')
 		{
@@ -468,12 +480,12 @@ void AdvertiseServer(ServerEntry se)
 		{
 			Format(buff, sizeof(buff), "%T", "servers_menu_server_entry_slots_count", i, (se.curr_players == 0 ? se.curr_players_info : se.curr_players), se.maxplayers);
 			PrintToChatColored(i, "%t", "server_advertisement_server_name", se.display_name);
-			PrintToChatColored(i, "%t", "server_advertisement_server_stats", buff, se.ip);
+			PrintToChatColored(i, "%t", "server_advertisement_server_stats", buff, se.GetDisplayIP());
 		}
 		else
 		{
 			PrintToChatColored(i, "%t", "server_advertisement_no_socket_server_name", se.display_name);
-			PrintToChatColored(i, "%t", "server_advertisement_no_socket_server_stats", se.ip);
+			PrintToChatColored(i, "%t", "server_advertisement_no_socket_server_stats", se.GetDisplayIP());
 		}
 	}
 }
@@ -679,9 +691,9 @@ public int ServerInfo_Menu(Menu menu, MenuAction action, int param1, int param2)
 				Format(se.map, sizeof(ServerEntry::map), "%T", "servinfo_menu_map_not_available", param1);
 			
 			if(!gSocketAvaliable)
-				menu.SetTitle("%T\n ", "servinfo_menu_title_no_socket", param1, se.display_name, se.ip);
+				menu.SetTitle("%T\n ", "servinfo_menu_title_no_socket", param1, se.display_name, se.GetDisplayIP());
 			else if(gShowPlayerInfo.BoolValue)
-				menu.SetTitle("%T\n ", "servinfo_menu_title", param1, se.display_name, se.ip, se.map);
+				menu.SetTitle("%T\n ", "servinfo_menu_title", param1, se.display_name, se.GetDisplayIP(), se.map);
 			else
 			{
 				char buff[32];
@@ -689,7 +701,7 @@ public int ServerInfo_Menu(Menu menu, MenuAction action, int param1, int param2)
 					Format(buff, sizeof(buff), "%T", "servers_menu_server_entry_slots_count", param1, (se.curr_players == 0 ? se.curr_players_info : se.curr_players), se.maxplayers);
 				else
 					Format(buff, sizeof(buff), "%T", "servers_menu_server_entry_not_available", param1);
-				menu.SetTitle("%T\n ", "servinfo_menu_title_no_player_info", param1, se.display_name, se.ip, se.map, buff);
+				menu.SetTitle("%T\n ", "servinfo_menu_title_no_player_info", param1, se.display_name, se.GetDisplayIP(), se.map, buff);
 			}
 			
 			gActiveMenu[param1] = menu;
@@ -812,16 +824,16 @@ public int ServerInfo_Menu(Menu menu, MenuAction action, int param1, int param2)
 							if(!IsClientConnected(i) || !IsClientInGame(i) || IsFakeClient(i))
 								continue;
 							
-							PrintToChatColored(i, "%t", "server_advertisement_leave", param1, se.ip);
+							PrintToChatColored(i, "%t", "server_advertisement_leave", param1, se.GetDisplayIP());
 						}
 					}
 					
-					RedirectClient(param1, se.ip);
+					RedirectClient(param1, se.GetDisplayIP());
 				}
 			else if(StrEqual(buff, "print_info"))
 			{
 				menu.Display(param1, MENU_TIME_FOREVER);
-				PrintToConsole(param1, "%T", "server_info", param1, se.display_name, se.ip);
+				PrintToConsole(param1, "%T", "server_info", param1, se.display_name, se.GetDisplayIP());
 			}
 		}
 		

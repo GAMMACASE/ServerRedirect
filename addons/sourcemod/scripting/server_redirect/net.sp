@@ -32,14 +32,6 @@ enum struct NetOffsets
 }
 static NetOffsets offsets;
 
-methodmap AddressBase
-{
-	property Address Address
-	{
-		public get() { return view_as<Address>(this); }
-	}
-}
-
 methodmap Netadr_s < AddressBase
 {
 	property netadrtype_t type
