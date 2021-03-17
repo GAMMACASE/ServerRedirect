@@ -165,7 +165,9 @@ ConVar gServerCommands,
 	gAdvertiseThis,
 	gRemoveThis,
 	gShowConfirmationMenu,
-	gAnnounceLeave;
+	gAnnounceLeave,
+	gServersMenuPagination,
+	gServersMenuServerNameLength;
 
 Menu gServersMenu,
 	gActiveMenu[MAXPLAYERS];
@@ -198,6 +200,8 @@ public void OnPluginStart()
 	gRemoveThis = CreateConVar("server_redirect_remove_this", "0", "If set, this current server will be removed from servers menu.", .hasMin = true, .hasMax = true, .max = 1.0);
 	gShowConfirmationMenu = CreateConVar("server_redirect_show_confirmation_menu", "0", "If set, will show confirmation menu when players will try to connect to some server via servers menu.", .hasMin = true, .hasMax = true, .max = 1.0);
 	gAnnounceLeave = CreateConVar("server_redirect_show_advertisement_leave", "0", "If set, will show message to alert players a player has connected to another server.", .hasMin = true, .hasMax = true, .max = 1.0);
+	gServersMenuPagination = CreateConVar("server_redirect_menu_pagination", "5", "The amount of items to show in servers list menu, if set to 0 default would be used (6 items per page).\n(Note: Lower this value if you have problems with server list menu not displaying everything)", .hasMin = true, .hasMax = true, .max = 6.0);
+	gServersMenuServerNameLength = CreateConVar("server_redirect_menu_servername_length", "0", "The amount of symbols per server name to show in servers list menu, if set to 0 possible maximum would be used.\n(Note: Lower this value if you have problems with server list menu not displaying everything)", .hasMin = true, .hasMax = true, .max = 128.0);
 	AutoExecConfig();
 	
 	LoadTranslations("server_redirect.phrases");
@@ -314,6 +318,9 @@ public void OnConfigsExecuted()
 	
 	if(gSocketAvaliable)
 		UpdateServersData();
+	
+	if(gServersMenuPagination.IntValue != 0)
+		gServersMenu.Pagination = gServersMenuPagination.IntValue;
 	
 	if(gServersMenu.ItemCount == 0)
 		gServersMenu.AddItem("no_servers", "", ITEMDRAW_DISABLED);
@@ -591,11 +598,19 @@ public int Servers_Menu(Menu menu, MenuAction action, int param1, int param2)
 			
 			if(gSocketAvaliable)
 			{
+				char buff2[PLATFORM_MAX_PATH];
 				if(se.maxplayers == 0)
+				{
 					Format(buff, sizeof(buff), "%T", "servers_menu_server_entry_not_available", param1);
+					Format(buff2, sizeof(buff2), "%T", "servinfo_menu_map_not_available", param1);
+					Format(buff2, sizeof(buff2), "%T", "servinfo_menu_server_entry_mapname", param1, buff2);
+				}
 				else
+				{
 					Format(buff, sizeof(buff), "%T", "servers_menu_server_entry_slots_count", param1, (se.curr_players == 0 ? se.curr_players_info : se.curr_players), se.maxplayers);
-				Format(buff, sizeof(buff), "%T", "servers_menu_server_entry", param1, buff, se.display_name);
+					Format(buff2, sizeof(buff2), "%T", "servinfo_menu_server_entry_mapname", param1, GetTrueMapName(se.map));
+				}
+				Format(buff, sizeof(buff), "%T\n%s", "servers_menu_server_entry", param1, buff, TrimServerName(se.display_name), buff2);
 			}
 			else
 				Format(buff, sizeof(buff), "%T", "servers_menu_server_entry_no_socket", param1, se.display_name);
@@ -687,13 +702,16 @@ public int ServerInfo_Menu(Menu menu, MenuAction action, int param1, int param2)
 			ServerEntry se;
 			gServers.GetServerByMenu(menu, se);
 			
+			char map[PLATFORM_MAX_PATH];
 			if(se.map[0] == '\0')
-				Format(se.map, sizeof(ServerEntry::map), "%T", "servinfo_menu_map_not_available", param1);
+				Format(map, sizeof(map), "%T", "servinfo_menu_map_not_available", param1);
+			else
+				map = GetTrueMapName(se.map);
 			
 			if(!gSocketAvaliable)
 				menu.SetTitle("%T\n ", "servinfo_menu_title_no_socket", param1, se.display_name, se.GetDisplayIP());
 			else if(gShowPlayerInfo.BoolValue)
-				menu.SetTitle("%T\n ", "servinfo_menu_title", param1, se.display_name, se.GetDisplayIP(), se.map);
+				menu.SetTitle("%T\n ", "servinfo_menu_title", param1, se.display_name, se.GetDisplayIP(), map);
 			else
 			{
 				char buff[32];
@@ -701,7 +719,7 @@ public int ServerInfo_Menu(Menu menu, MenuAction action, int param1, int param2)
 					Format(buff, sizeof(buff), "%T", "servers_menu_server_entry_slots_count", param1, (se.curr_players == 0 ? se.curr_players_info : se.curr_players), se.maxplayers);
 				else
 					Format(buff, sizeof(buff), "%T", "servers_menu_server_entry_not_available", param1);
-				menu.SetTitle("%T\n ", "servinfo_menu_title_no_player_info", param1, se.display_name, se.GetDisplayIP(), se.map, buff);
+				menu.SetTitle("%T\n ", "servinfo_menu_title_no_player_info", param1, se.display_name, se.GetDisplayIP(), map, buff);
 			}
 			
 			gActiveMenu[param1] = menu;
@@ -1108,4 +1126,46 @@ stock void FormatTimeCustom(float time, char[] buff, int size)
 		Format(buff, size, "%d:%02d:%02.0f", hours, minutes, time);
 	else
 		Format(buff, size, "%d:%02.0f", minutes, time);
+}
+
+stock char[] GetTrueMapName(const char fullmap[PLATFORM_MAX_PATH])
+{
+	char map[PLATFORM_MAX_PATH];
+	map = fullmap;
+	
+	int idx = FindCharInString(map, '/', true);
+	if(idx != -1)
+		strcopy(map, sizeof(map), map[idx + 1]);
+	
+	idx = FindCharInString(map, '\\', true);
+	if(idx != -1)
+		strcopy(map, sizeof(map), map[idx + 1]);
+	
+	return map;
+}
+
+stock char[] TrimServerName(const char servername[sizeof(ServerEntry::display_name)])
+{
+	if(gServersMenuServerNameLength.IntValue == 0)
+		return servername;
+	
+	char name[sizeof(ServerEntry::display_name)];
+	
+	int count, finallen;
+	for(int i = 0; servername[i]; i++)
+	{
+		count += ((servername[i] & 0xc0) != 0x80) ? 1 : 0;
+		
+		if(count <= gServersMenuServerNameLength.IntValue)
+		{
+			name[i] = servername[i];
+			finallen = i;
+		}
+	}
+	
+	name[finallen] = '\0';
+	
+	if(count > gServersMenuServerNameLength.IntValue)
+		Format(name, sizeof(name), "%s...", name);
+	return name;
 }

@@ -57,6 +57,12 @@
 		"ru"		"[Н/Д]"
 	}
 
+	"servinfo_menu_server_entry_mapname"
+	{
+		"#format"	"{1:s}"
+		"ru"		"Карта: {1}"
+	}
+
 	"servinfo_menu_title_no_socket"
 	{
 		"#format"	"{1:s},{2:s}"
