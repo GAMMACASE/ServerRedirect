@@ -22,7 +22,7 @@ Note: All servers were taken from server browser and selection was totaly random
 
 Servers list menu:
 
-![screen1](https://i.imgur.com/7v12EwG.png)
+![screen1](https://i.imgur.com/lYSPQRK.png)
 
 Server info menu (Shown when you chose server):
 
