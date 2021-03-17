@@ -26,7 +26,7 @@ public Plugin myinfo =
 	name = "Server redirect",
 	author = "GAMMA CASE",
 	description = "Allows to connect to other servers.",
-	version = "1.2.0",
+	version = "1.2.1",
 	url = "https://steamcommunity.com/id/_GAMMACASE_/"
 };
 
@@ -63,15 +63,25 @@ enum struct ServerEntry
 	
 	char CutIp()
 	{
+		int idx = FindCharInString(this.ip, ':', true);
+		
+		if(idx == -1)
+			return this.ip;
+		
 		char _ip[32];
-		strcopy(_ip, sizeof(_ip), this.ip);
-		_ip[FindCharInString(_ip, ':', true)] = '\0';
+		_ip = this.ip;
+		_ip[idx] = '\0';
 		return _ip;
 	}
 	
 	int CutPort()
 	{
-		return StringToInt(this.ip[FindCharInString(this.ip, ':', true) + 1]);
+		int idx = FindCharInString(this.ip, ':', true);
+		
+		if(idx == -1)
+			return 27015;
+		
+		return StringToInt(this.ip[idx + 1]);
 	}
 }
 
@@ -265,12 +275,6 @@ public void OnConfigsExecuted()
 		if(se.ip[0] == '\0')
 		{
 			LogError(SNAME..."Failed to get ip for section \"%s\" skipping.", buff);
-			continue;
-		}
-		
-		if(re.Match(se.ip) <= 0)
-		{
-			LogError(SNAME..."Found invalid ip address in section \"%s\" skipping.", buff);
 			continue;
 		}
 		
@@ -904,6 +908,7 @@ public void Socket_Connected(Socket socket, ArrayList data)
 		
 		ServerEntry se;
 		int idx = gServers.GetServer(sd.ip, se);
+		
 		if(idx != -1)
 		{
 			if(se.challenge == 0)
@@ -915,7 +920,7 @@ public void Socket_Connected(Socket socket, ArrayList data)
 			{
 				char buff[32];
 				sd.num_of_recv++;
-				Format(buff, sizeof(buff), "\xFF\xFF\xFF\xFF\x55%s", se.challenge);
+				Format(buff, sizeof(buff), "\xFF\xFF\xFF\xFF\x55%c%c%c%c", se.challenge & 0xFF, se.challenge >> 8 & 0xFF, se.challenge >> 16 & 0xFF, se.challenge >>> 24);
 				SocketSend(socket, buff, 9);
 			}
 			
@@ -987,7 +992,7 @@ public void Socket_Recieved(Socket socket, const char[] data, const int dataSize
 				
 				PlayerData pd;
 				char buff[32];
-				for(;offs < dataSize;)
+				while(offs < dataSize)
 				{
 					offs++;
 					offs += ByteStream_ReadString(data[offs], pd.name, sizeof(PlayerData::name));
