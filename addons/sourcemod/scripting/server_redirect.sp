@@ -27,7 +27,7 @@ public Plugin myinfo =
 	name = "Server redirect",
 	author = "GAMMA CASE",
 	description = "Allows to connect to other servers.",
-	version = "1.3.0",
+	version = "1.3.1",
 	url = "https://steamcommunity.com/id/_GAMMACASE_/"
 };
 
@@ -946,7 +946,9 @@ public void Socket_Connected(Socket socket, ArrayList data)
 		SocketSend(socket, "\xFF\xFF\xFF\xFF\x54Source Engine Query\0", 25);
 	else
 	{
-		Format(buff, sizeof(buff), "\xFF\xFF\xFF\xFF\x54Source Engine Query\0%c%c%c%c", se.challenge & 0xFF, se.challenge >> 8 & 0xFF, se.challenge >> 16 & 0xFF, se.challenge >>> 24);
+		Format(buff, sizeof(buff), "\xFF\xFF\xFF\xFF\x54Source Engine QueryA%c%c%c%c", se.challenge & 0xFF, se.challenge >> 8 & 0xFF, se.challenge >> 16 & 0xFF, se.challenge >>> 24);
+		// Server expectes zero terminated string, so hacking around the Format() function here
+		buff[24] = '\0';
 		SocketSend(socket, buff, 29);
 	}
 	
@@ -1013,7 +1015,7 @@ public void Socket_Recieved(Socket socket, const char[] data, const int dataSize
 			
 			char buff[32];
 			
-			if(gShowPlayerInfo.BoolValue)
+			if(!sd.got_player_data && gShowPlayerInfo.BoolValue)
 			{
 				Format(buff, sizeof(buff), "\xFF\xFF\xFF\xFF\x55%c%c%c%c", se.challenge & 0xFF, se.challenge >> 8 & 0xFF, se.challenge >> 16 & 0xFF, se.challenge >>> 24);
 				SocketSend(socket, buff, 9);
@@ -1021,7 +1023,9 @@ public void Socket_Recieved(Socket socket, const char[] data, const int dataSize
 			
 			if(!sd.got_answer)
 			{
-				Format(buff, sizeof(buff), "\xFF\xFF\xFF\xFF\x54Source Engine Query\0%c%c%c%c", se.challenge & 0xFF, se.challenge >> 8 & 0xFF, se.challenge >> 16 & 0xFF, se.challenge >>> 24);
+				Format(buff, sizeof(buff), "\xFF\xFF\xFF\xFF\x54Source Engine QueryA%c%c%c%c", se.challenge & 0xFF, se.challenge >> 8 & 0xFF, se.challenge >> 16 & 0xFF, se.challenge >>> 24);
+				// Server expectes zero terminated string, so hacking around the Format() function here
+				buff[24] = '\0';
 				SocketSend(socket, buff, 29);
 			}
 		}
