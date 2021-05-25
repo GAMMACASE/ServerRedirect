@@ -200,7 +200,7 @@ public void OnPluginStart()
 	gRemoveThis = CreateConVar("server_redirect_remove_this", "0", "If set, this current server will be removed from servers menu.", .hasMin = true, .hasMax = true, .max = 1.0);
 	gShowConfirmationMenu = CreateConVar("server_redirect_show_confirmation_menu", "0", "If set, will show confirmation menu when players will try to connect to some server via servers menu.", .hasMin = true, .hasMax = true, .max = 1.0);
 	gAnnounceLeave = CreateConVar("server_redirect_show_advertisement_leave", "0", "If set, will show message to alert players a player has connected to another server.", .hasMin = true, .hasMax = true, .max = 1.0);
-	gServersMenuPagination = CreateConVar("server_redirect_menu_pagination", "5", "The amount of items to show in servers list menu, if set to 0 default would be used (6 items per page).\n(Note: Lower this value if you have problems with server list menu not displaying everything)", .hasMin = true, .hasMax = true, .max = 6.0);
+	gServersMenuPagination = CreateConVar("server_redirect_menu_pagination", "5", "The amount of items to show in servers list menu, if set to 0 default would be used (6 items per page).\n(Note: Lower this value if you have problems with server list menu not displaying everything)", .hasMin = true, .min = 2.0, .hasMax = true, .max = 6.0);
 	gServersMenuServerNameLength = CreateConVar("server_redirect_menu_servername_length", "0", "The amount of symbols per server name to show in servers list menu, if set to 0 possible maximum would be used.\n(Note: Lower this value if you have problems with server list menu not displaying everything)", .hasMin = true, .hasMax = true, .max = 128.0);
 	AutoExecConfig();
 	
@@ -580,7 +580,7 @@ public int Servers_Menu(Menu menu, MenuAction action, int param1, int param2)
 		
 		case MenuAction_DisplayItem:
 		{
-			if(param2 >= gMenuLastPos[param1] + 6 || param2 <= gMenuLastPos[param1] - 6)
+			if(param2 >= gMenuLastPos[param1] + gServersMenuPagination.IntValue || param2 <= gMenuLastPos[param1] - gServersMenuPagination.IntValue)
 				gMenuLastPos[param1] = param2;
 			
 			char buff[128];
