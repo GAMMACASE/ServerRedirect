@@ -1006,8 +1006,18 @@ public void Socket_Recieved(Socket socket, const char[] data, const int dataSize
 			sd.num_of_recv++;
 			
 			char buff[32];
-			Format(buff, sizeof(buff), "\xFF\xFF\xFF\xFF\x55%c%c%c%c", se.challenge & 0xFF, se.challenge >> 8 & 0xFF, se.challenge >> 16 & 0xFF, se.challenge >>> 24);
-			SocketSend(socket, buff, 9);
+			
+			if(gShowPlayerInfo.BoolValue)
+			{
+				Format(buff, sizeof(buff), "\xFF\xFF\xFF\xFF\x55%c%c%c%c", se.challenge & 0xFF, se.challenge >> 8 & 0xFF, se.challenge >> 16 & 0xFF, se.challenge >>> 24);
+				SocketSend(socket, buff, 9);
+			}
+			
+			if(!sd.got_answer)
+			{
+				Format(buff, sizeof(buff), "\xFF\xFF\xFF\xFF\x54Source Engine Query%c%c%c%c", se.challenge & 0xFF, se.challenge >> 8 & 0xFF, se.challenge >> 16 & 0xFF, se.challenge >>> 24);
+				SocketSend(socket, buff, 29);
+			}
 		}
 		
 		case 0x44:
