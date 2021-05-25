@@ -27,7 +27,7 @@ public Plugin myinfo =
 	name = "Server redirect",
 	author = "GAMMA CASE",
 	description = "Allows to connect to other servers.",
-	version = "1.2.1",
+	version = "1.3.0",
 	url = "https://steamcommunity.com/id/_GAMMACASE_/"
 };
 
@@ -932,33 +932,39 @@ public int SortPlayerInfo(int index1, int index2, Handle array, Handle hndl)
 
 public void Socket_Connected(Socket socket, ArrayList data)
 {
-	SocketSend(socket, "\xFF\xFF\xFF\xFF\x54Source Engine Query", 25);
+	char buff[32];
+	SocketData sd;
+	data.GetArray(0, sd);
 	
-	if(data && gShowPlayerInfo.BoolValue)
+	ServerEntry se;
+	int idx = gServers.GetServer(sd.ip, se);
+	
+	if(idx == -1)
+		return;
+	
+	if(se.challenge == 0)
+		SocketSend(socket, "\xFF\xFF\xFF\xFF\x54Source Engine Query\0", 25);
+	else
 	{
-		SocketData sd;
-		data.GetArray(0, sd);
-		
-		ServerEntry se;
-		int idx = gServers.GetServer(sd.ip, se);
-		
-		if(idx != -1)
+		Format(buff, sizeof(buff), "\xFF\xFF\xFF\xFF\x54Source Engine Query\0%c%c%c%c", se.challenge & 0xFF, se.challenge >> 8 & 0xFF, se.challenge >> 16 & 0xFF, se.challenge >>> 24);
+		SocketSend(socket, buff, 29);
+	}
+	
+	if(gShowPlayerInfo.BoolValue)
+	{
+		if(se.challenge == 0)
 		{
-			if(se.challenge == 0)
-			{
-				sd.num_of_recv++;
-				SocketSend(socket, "\xFF\xFF\xFF\xFF\x55\xFF\xFF\xFF\xFF", 9);
-			}
-			else
-			{
-				char buff[32];
-				sd.num_of_recv++;
-				Format(buff, sizeof(buff), "\xFF\xFF\xFF\xFF\x55%c%c%c%c", se.challenge & 0xFF, se.challenge >> 8 & 0xFF, se.challenge >> 16 & 0xFF, se.challenge >>> 24);
-				SocketSend(socket, buff, 9);
-			}
-			
-			data.SetArray(0, sd);
+			sd.num_of_recv++;
+			SocketSend(socket, "\xFF\xFF\xFF\xFF\x55\xFF\xFF\xFF\xFF", 9);
 		}
+		else
+		{
+			sd.num_of_recv++;
+			Format(buff, sizeof(buff), "\xFF\xFF\xFF\xFF\x55%c%c%c%c", se.challenge & 0xFF, se.challenge >> 8 & 0xFF, se.challenge >> 16 & 0xFF, se.challenge >>> 24);
+			SocketSend(socket, buff, 9);
+		}
+		
+		data.SetArray(0, sd);
 	}
 }
 
@@ -1015,7 +1021,7 @@ public void Socket_Recieved(Socket socket, const char[] data, const int dataSize
 			
 			if(!sd.got_answer)
 			{
-				Format(buff, sizeof(buff), "\xFF\xFF\xFF\xFF\x54Source Engine Query%c%c%c%c", se.challenge & 0xFF, se.challenge >> 8 & 0xFF, se.challenge >> 16 & 0xFF, se.challenge >>> 24);
+				Format(buff, sizeof(buff), "\xFF\xFF\xFF\xFF\x54Source Engine Query\0%c%c%c%c", se.challenge & 0xFF, se.challenge >> 8 & 0xFF, se.challenge >> 16 & 0xFF, se.challenge >>> 24);
 				SocketSend(socket, buff, 29);
 			}
 		}
