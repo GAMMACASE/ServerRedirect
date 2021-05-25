@@ -628,6 +628,9 @@ public int Servers_Menu(Menu menu, MenuAction action, int param1, int param2)
 		
 		case MenuAction_Cancel:
 		{
+			if(!IsClientInGame(param1))
+				return 0;
+			
 			gActiveMenu[param1] = null;
 			gMenuLastPos[param1] = 0;
 			
@@ -857,11 +860,11 @@ public int ServerInfo_Menu(Menu menu, MenuAction action, int param1, int param2)
 		
 		case MenuAction_Cancel:
 		{
+			if(!IsClientInGame(param1))
+				return 0;
+			
 			gActiveMenu[param1] = null;
 			gMenuLastPos[param1] = 0;
-			
-			if(!IsClientConnected(param1))
-				return 0;
 			
 			if(param2 == MenuCancel_ExitBack)
 				gServersMenu.DisplayAt(param1, gMenuServersLastItem[param1], MENU_TIME_FOREVER);
