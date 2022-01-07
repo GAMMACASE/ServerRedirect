@@ -3,6 +3,10 @@
 #endif
 #define _colorutils_included
 
+/* Compile time settings for this include. Should be defined before including this file.
+*  #define OVERRIDE_DEFAULT			//Overrides default print function to color ones
+*/
+
 #define CLR_D	"\1" //COLOR_DEFAULT
 #define CLR_R	"\2" //COLOR_RED
 #define CLR_LP	"\3" //COLOR_LIGHTPURPLE
@@ -50,9 +54,11 @@ enum
 
 #if defined _msgutils_included
 
+// Does produce clicky sound when printed
 stock void PrintToChatLongColored(int client, const char[] format, any ...)
 {
 	char buff[MAX_MSG_SIZE];
+	SetGlobalTransTarget(client);
 	VFormat(buff, sizeof(buff), format, 3);
 	
 	ReformatMessage(buff, sizeof(buff));
@@ -61,15 +67,32 @@ stock void PrintToChatLongColored(int client, const char[] format, any ...)
 	PrintToChatLong(client, buff);
 }
 
+// Does produce clicky sound when printed
 stock void PrintToChatAllLongColored(const char[] format, any ...)
 {
 	char buff[MAX_MSG_SIZE];
-	VFormat(buff, sizeof(buff), format, 2);
+	int prev_lang = -1, lang;
 	
-	ReformatMessage(buff, sizeof(buff));
-	CheckForSpace(buff, sizeof(buff));
-	
-	PrintToChatAllLong(buff);
+	for(int i = 1; i <= MaxClients; i++)
+	{
+		if(!IsClientInGame(i))
+			continue;
+		
+		lang = GetClientLanguage(i);
+		
+		if(prev_lang != lang)
+		{
+			SetGlobalTransTarget(i);
+			VFormat(buff, sizeof(buff), format, 2);
+			
+			ReformatMessage(buff, sizeof(buff));
+			CheckForSpace(buff, sizeof(buff));
+		}
+		
+		PrintToChatLong(i, buff);
+		
+		prev_lang = lang;
+	}
 }
 
 #endif
@@ -77,6 +100,7 @@ stock void PrintToChatAllLongColored(const char[] format, any ...)
 stock void PrintToChatColored(int client, const char[] format, any ...)
 {
 	char buff[MAX_MESSAGE_LENGTH];
+	SetGlobalTransTarget(client);
 	VFormat(buff, sizeof(buff), format, 3);
 	
 	ReformatMessage(buff, sizeof(buff));
@@ -88,15 +112,31 @@ stock void PrintToChatColored(int client, const char[] format, any ...)
 stock void PrintToChatAllColored(const char[] format, any ...)
 {
 	char buff[MAX_MESSAGE_LENGTH];
-	VFormat(buff, sizeof(buff), format, 2);
+	int prev_lang = -1, lang;
 	
-	ReformatMessage(buff, sizeof(buff));
-	CheckForSpace(buff, sizeof(buff));
-	
-	PrintToChatAll(buff);
+	for(int i = 1; i <= MaxClients; i++)
+	{
+		if(!IsClientInGame(i))
+			continue;
+		
+		lang = GetClientLanguage(i);
+		
+		if(prev_lang != lang)
+		{
+			SetGlobalTransTarget(i);
+			VFormat(buff, sizeof(buff), format, 2);
+			
+			ReformatMessage(buff, sizeof(buff));
+			CheckForSpace(buff, sizeof(buff));
+		}
+		
+		PrintToChat(i, buff);
+		
+		prev_lang = lang;
+	}
 }
 
-stock void ReformatMessage(char[] buff, int len)
+static stock void ReformatMessage(char[] buff, int len)
 {
 	for(int i = 0; i < COLOR_END; i++)
 	{
@@ -105,7 +145,7 @@ stock void ReformatMessage(char[] buff, int len)
 	}
 }
 
-stock void CheckForSpace(char[] buff, int len)
+static stock void CheckForSpace(char[] buff, int len)
 {
 	if(COLOR_START < buff[0] < COLOR_END)
 		Format(buff, len, " %s", buff);

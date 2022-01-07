@@ -27,24 +27,23 @@ stock void AutoExecConfigCustom(bool autoCreate=true, const char[] name="", cons
 	if(gRegisteredConVars.Length == 0)
 		return;
 	
-	char path[PLATFORM_MAX_PATH], plname[PLATFORM_MAX_PATH];
-	
-	Format(path, sizeof(path), "cfg/%s", folder);
-	if(autoCreate && !DirExists(path, true))
-		if(!CreateDirectory(path, 0o755, true))
-			ThrowError("Failed to create directory \"%s\"!", path);
-	
-	GetPluginFilename(INVALID_HANDLE, plname, sizeof(plname));
-	plname[FindCharInString(plname, '.', true)] = '\0';
-	
-	if(name[0] == '\0')
-		Format(path, sizeof(path), "cfg/%s/plugin.%s.cfg", folder, plname[FindCharInString(plname, '/', true) + 1]);
-	
 	if(autoCreate)
 	{
-		if(FileExists(path, true))
-			ParseConVarFile(path);
+		char path[PLATFORM_MAX_PATH], plname[PLATFORM_MAX_PATH];
 		
+		Format(path, sizeof(path), "cfg/%s", folder);
+		if(!DirExists(path) && !CreateDirectory(path, 0o755))
+			ThrowError("Failed to create directory \"%s\"!", path);
+		
+		GetPluginFilename(INVALID_HANDLE, plname, sizeof(plname));
+		plname[FindCharInString(plname, '.', true)] = '\0';
+		
+		if(name[0] != '\0')
+			Format(path, sizeof(path), "cfg/%s/%s.cfg", folder, name);
+		else
+			Format(path, sizeof(path), "cfg/%s/plugin.%s.cfg", folder, plname[FindCharInString(plname, '/', true) + 1]);
+		
+		ParseConVarFile(path);
 		FillConVarFile(path, plname);
 	}
 	
@@ -110,6 +109,9 @@ static stock void FillConVarFile(const char path[PLATFORM_MAX_PATH], const char 
 static stock void ParseConVarFile(const char path[PLATFORM_MAX_PATH])
 {
 	File file = OpenFile(path, "r", true);
+	
+	if(!FileExists(path))
+		return;
 	
 	ConVar cv;
 	int buff_pos;

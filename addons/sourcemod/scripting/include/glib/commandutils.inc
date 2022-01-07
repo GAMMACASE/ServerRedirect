@@ -49,8 +49,6 @@ stock void RegConsoleCmds(const char[] commands, ConCmd callback, const char[] d
 		len = i++ - start_pos + 1;
 		strcopy(buff, (len > MAX_CMD_LENGTH ? MAX_CMD_LENGTH : len), commands[start_pos]);
 		
-		PrintToServer("Registering \"%s\"", buff);
-		
 		if(gRegisteredCommands.FindString(buff) == -1)
 			RegConsoleCmd(buff, callback, description, flags);
 		
