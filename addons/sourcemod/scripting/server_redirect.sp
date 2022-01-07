@@ -27,7 +27,7 @@ public Plugin myinfo =
 	name = "Server redirect",
 	author = "GAMMA CASE",
 	description = "Allows to connect to other servers.",
-	version = "1.3.1",
+	version = "1.3.2",
 	url = "https://steamcommunity.com/id/_GAMMACASE_/"
 };
 
@@ -988,6 +988,7 @@ public void Socket_Recieved(Socket socket, const char[] data, const int dataSize
 	
 	switch(data[4])
 	{
+		// 'I'
 		case 0x49:
 		{
 			sd.got_answer = true;
@@ -1005,6 +1006,7 @@ public void Socket_Recieved(Socket socket, const char[] data, const int dataSize
 			se.password_protected = !!data[offs];
 		}
 		
+		// 'A'
 		case 0x41:
 		{
 			if(++sd.challenge_retries > 3)
@@ -1030,6 +1032,7 @@ public void Socket_Recieved(Socket socket, const char[] data, const int dataSize
 			}
 		}
 		
+		// 'D'
 		case 0x44:
 		{
 			sd.challenge_retries = 0;
@@ -1054,6 +1057,11 @@ public void Socket_Recieved(Socket socket, const char[] data, const int dataSize
 						strcopy(pd.name, sizeof(PlayerData::name), "???");
 					
 					offs += 4;
+					
+					// Safe guard for malformed packets, not sure how else to catch such packets
+					if(offs + 4 > dataSize)
+						break;
+					
 					offs += ByteStream_Read32(data[offs], pd.time);
 					se.players.PushArray(pd);
 				}
@@ -1101,6 +1109,28 @@ public void Socket_Disconnect(Socket socket, any arg) { }
 public void SocketCreate_Error(Socket socket, const int errorType, const int errorNum, ArrayList data)
 {
 	//I guess this can be empty as timeout timer handles this pretty well.
+}
+
+// For debugging purposes only
+stock bool ByteStream_Dump(const char[] stream, int len, int columns = 10)
+{
+	char chr, buff[128], buff2[128];
+	buff = "[0]";
+	for(int i = 0; i < len; i++)
+	{
+		chr = stream[i];
+		Format(buff, sizeof(buff), "%s %02X", buff, chr);
+		Format(buff2, sizeof(buff2), "%s%c", buff2, (chr > ' ' && chr != 0x7F && chr != 0xFF ? chr : '.'));
+		if(i % columns == columns - 1)
+		{
+			PrintToServer(SNAME..."%s %s", buff, buff2);
+			Format(buff, sizeof(buff), "[%i]", i + 1);
+			buff2[0] = '\0';
+		}
+	}
+	
+	if((len - 1) % columns != columns - 1)
+		PrintToServer(SNAME..."%s %s", buff, buff2);
 }
 
 stock bool IsSpamming(float &time_of_use, float wait_time = 5.0)
