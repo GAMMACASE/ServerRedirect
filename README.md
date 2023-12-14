@@ -1,3 +1,6 @@
+# Counter-Strike 2 support
+Since the release of CS2, this project would no longer be maintained and is archived.
+
 # ServerRedirect
 SourceMod plugin that allows players to see and connect to other servers.
 
